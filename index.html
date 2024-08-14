@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Drag and Drop Sortable List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .draggable-item {
+            cursor: move;
+            user-select: none;
+        }
+        .dragging {
+            opacity: 0.5;
+        }
+        .remove-btn {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="mb-4">Dynamic Drag and Drop Sortable List</h2>
+        <div class="mb-3">
+            <input type="text" id="new-item-input" class="form-control" placeholder="Enter new item">
+            <button id="add-item-btn" class="btn btn-primary mt-2">Add Item</button>
+        </div>
+        <ul class="list-group" id="sortable-list"></ul>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const list = document.getElementById('sortable-list');
+            const newItemInput = document.getElementById('new-item-input');
+            const addItemBtn = document.getElementById('add-item-btn');
+            let draggingElement = null;
+
+            // Initial items
+            const initialItems = ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'];
+            initialItems.forEach(item => addNewItem(item));
+
+            addItemBtn.addEventListener('click', () => {
+                const newItemText = newItemInput.value.trim();
+                if (newItemText) {
+                    addNewItem(newItemText);
+                    newItemInput.value = '';
+                }
+            });
+
+            function addNewItem(text) {
+                const li = document.createElement('li');
+                li.className = 'list-group-item draggable-item d-flex justify-content-between align-items-center';
+                li.draggable = true;
+                li.innerHTML = `
+                    <span>${text}</span>
+                    <span class="remove-btn badge bg-danger rounded-pill">×</span>
+                `;
+                list.appendChild(li);
+
+                li.querySelector('.remove-btn').addEventListener('click', () => {
+                    li.remove();
+                });
+            }
+
+            list.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('draggable-item')) {
+                    draggingElement = e.target;
+                    setTimeout(() => {
+                        e.target.classList.add('dragging');
+                    }, 0);
+                }
+            });
+
+            list.addEventListener('dragend', (e) => {
+                if (e.target.classList.contains('draggable-item')) {
+                    e.target.classList.remove('dragging');
+                }
+            });
+
+            list.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(list, e.clientY);
+                const currentElement = draggingElement;
+                if (currentElement && currentElement.classList.contains('draggable-item')) {
+                    if (afterElement == null) {
+                        list.appendChild(currentElement);
+                    } else {
+                        list.insertBefore(currentElement, afterElement);
+                    }
+                }
+            });
+
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('.draggable-item:not(.dragging)')];
+
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+        });
+    </script>
+</body>
+</html>
